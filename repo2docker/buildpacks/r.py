@@ -210,10 +210,6 @@ class RBuildPack(PythonBuildPack):
             self.checkpoint_date.isoformat()
         )
 
-        # - "ShinyApps" is a shiny quasi-convention; I prefer "shiny"
-        shiny_apps_dir = 'ShinyApps'
-        shiny_port = '3838'
-
         assemble_scripts = super().get_assemble_scripts() + [
             (
                 "root",
@@ -242,15 +238,6 @@ class RBuildPack(PythonBuildPack):
                 install -o ${NB_USER} -g ${NB_USER} /dev/null /var/log/shiny-server.log && \
                 install -o ${NB_USER} -g ${NB_USER} /dev/null /var/run/shiny-server.pid
                 """
-            ),
-            (
-                # mvp -- not optimal.
-                # - how does repo2docker want to COPY files
-                # - should shiny-server.conf be configurable by users?
-                "root",
-                r"""
-                printf "run_as ${{NB_USER}};\nserver {{\n  listen {port};\n  location / {{\n    site_dir ${{HOME}}/{apps_dir};\n    log_dir ${{HOME}}/logs;\n    directory_index on;\n  }}\n}}\n" > /etc/shiny-server/shiny-server.conf
-                """.format(apps_dir=shiny_apps_dir, port=shiny_port)
             ),
         ]
 
