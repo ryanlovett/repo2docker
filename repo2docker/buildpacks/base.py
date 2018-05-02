@@ -8,7 +8,10 @@ import logging
 import docker
 
 TEMPLATE = r"""
-FROM buildpack-deps:artful
+FROM buildpack-deps:bionic
+
+# avoid prompts from apt
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Set up locales properly
 RUN apt-get update && \
@@ -109,7 +112,8 @@ USER ${NB_USER}
 # Make sure that postBuild scripts are marked executable before executing them
 {% if post_build_scripts -%}
 {% for s in post_build_scripts -%}
-RUN chmod +x {{ s }} && ./{{ s }}
+RUN chmod +x {{ s }}
+RUN ./{{ s }}
 {% endfor %}
 {% endif -%}
 
@@ -170,6 +174,8 @@ class BuildPack:
             # FIXME: Use npm from nodesource!
             # Everything seems to depend on npm these days, unfortunately.
             "npm",
+
+            "unzip",
         }
 
     def get_env(self):

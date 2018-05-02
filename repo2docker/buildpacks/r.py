@@ -128,17 +128,11 @@ class RBuildPack(PythonBuildPack):
         # This is MD5, because that is what RStudio download page provides!
         rstudio_checksum = '24cd11f0405d8372b4168fc9956e0386'
 
-        shiny_url = 'https://download3.rstudio.org/ubuntu-12.04/x86_64/shiny-server-1.5.6.875-amd64.deb'
-        shiny_checksum = 'de039a6f9e055de693524e6cb44f6a03'
-
         # Version of MRAN to pull devtools from.
         devtools_version = '2018-02-01'
 
         # IRKernel version - specified as a tag in the IRKernel repository
         irkernel_version = '0.8.11'
-
-        nbrsessionproxy_pip_spec = 'nbrsessionproxy==0.6.1'
-        nbrsessionproxy_pip_spec = 'git+https://github.com/ryanlovett/nbrsessionproxy.git@432262c'
 
         return super().get_build_scripts() + [
             (
@@ -163,27 +157,23 @@ class RBuildPack(PythonBuildPack):
             ),
             (
                 "root",
-                # Install Shiny!
+                # Set paths so that RStudio shares libraries with base R
+                # install. This first comments out any R_LIBS_USER that
+                # might be set in /etc/R/Renviron and then sets it.
                 r"""
-                curl --silent --location --fail {url} > /tmp/{deb}.deb && \
-                echo '{checksum} /tmp/{deb}.deb' | md5sum -c - && \
-                dpkg -i /tmp/{deb}.deb && \
-                rm /tmp/{deb}.deb
-                """.format(
-                    url=shiny_url,
-                    checksum=shiny_checksum,
-                    deb="shiny"
-                )
+                sed -i -e '/^R_LIBS_USER=/s/^/#/' /etc/R/Renviron && \
+                echo "R_LIBS_USER=${R_LIBS_USER}" >> /etc/R/Renviron
+                """
             ),
             (
                 "${NB_USER}",
                 # Install nbrsessionproxy
                 r"""
-                pip install --no-cache-dir {pip_spec} && \
+                pip install --no-cache-dir nbrsessionproxy==0.6.1 && \
                 jupyter serverextension enable nbrsessionproxy --sys-prefix && \
                 jupyter nbextension install --py nbrsessionproxy --sys-prefix && \
                 jupyter nbextension enable --py nbrsessionproxy --sys-prefix
-                """.format(pip_spec=nbrsessionproxy_pip_spec)
+                """
             ),
             (
                 "${NB_USER}",
@@ -217,7 +207,6 @@ class RBuildPack(PythonBuildPack):
                 # We set download method to be curl so we get HTTPS support
                 r"""
                 echo "options(repos = c(CRAN='{mran_url}'), download.file.method = 'libcurl')" > /etc/R/Rprofile.site
-
                 """.format(mran_url=mran_url)
             ),
             (
@@ -241,11 +230,12 @@ class RBuildPack(PythonBuildPack):
             ),
         ]
 
-        if os.path.exists('install.R'):
+        installR_path = self.binder_path('install.R')
+        if os.path.exists(installR_path):
             assemble_scripts += [
                 (
                     "${NB_USER}",
-                    "Rscript install.R"
+                    "Rscript %s" % installR_path
                 )
             ]
 
