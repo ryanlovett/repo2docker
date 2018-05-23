@@ -197,7 +197,10 @@ class BuildPack:
         Just sets the PATH environment variable. Separated out since
         it is very commonly set by various buildpacks.
         """
-        return []
+        # Allow local user installs into ~/.local, which is where the
+        # XDG desktop standard suggests these should be
+        # See https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
+        return ['$HOME/.local/bin']
 
     def get_labels(self):
         """
