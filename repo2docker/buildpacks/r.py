@@ -210,15 +210,6 @@ class RBuildPack(PythonBuildPack):
                 """.format(mran_url=mran_url)
             ),
             (
-                "root",
-                # Even with the container env, without this shiny will want to
-                # use ~/R/x86...
-                r"""
-                sed -i -e '/^R_LIBS_USER=/s/^/#/' /etc/R/Renviron && \
-                echo "R_LIBS_USER=${R_LIBS_USER}" >> /etc/R/Renviron
-                """
-            ),
-            (
                 # Not all of these locations are configurable; log_dir is
                 "root",
                 r"""
